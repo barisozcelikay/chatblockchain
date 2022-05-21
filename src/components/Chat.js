@@ -74,8 +74,8 @@ class Chat extends Component {
         const accounts = await web3.eth.getAccounts()
         this.setState({ 
             accounts: accounts,
-            account: accounts[0],
-            otherAccount: accounts[1]
+            account:this.state.account === '' ? accounts[0] : this.state.account,
+            otherAccount: this.state.otherAccount === '' ? accounts[1] : this.state.otherAccount
          })
         console.log(accounts)
     
@@ -85,9 +85,12 @@ class Chat extends Component {
         // Load smart contract
         const networkId =  await web3.eth.net.getId()
         const chatAppData = ChatApp.networks[networkId]
+        console.log(networkId);
         const abi = ChatApp.abi
         if(chatAppData) {
-          const chatContract = new web3.eth.Contract(abi, chatAppData.address)
+       // console.log("Load blocktayım :",this.state.otherAccount);
+          const chatContract = new web3.eth.Contract(abi, this.state.otherAccount )
+          console.log(chatContract);
           this.setState({ chatContract: chatContract })
         }
         else {
@@ -186,6 +189,7 @@ class Chat extends Component {
 
     async didReceiveMessage(message, isResponse) {
         let chats = this.state.chats
+        console.log("Chat Sayisi : ",chats.length)
         chats.push(
             {
                 msg: message,
@@ -199,10 +203,14 @@ class Chat extends Component {
     }
 
     async didSendMessage(message) {
+        console.log("Haydi ",this.state.otherAccount)
         this.state.chatContract.methods.sendMsg(this.state.otherAccount, message)
-            .send({ from: this.state.account, gas: 1500000 })
+            .send({ from: this.state.account, gas: 1500000 ,})
         await this.sendEtherIfAsked()
         await this.askEtherIfAsked()
+        this.setState({
+            inputValue : ""
+        })
     }
 
     async sendEtherIfAsked() {
@@ -212,9 +220,11 @@ class Chat extends Component {
 
         if (splitted[0] == "send_ether" && this.isNumeric(splitted[1])) {
             let asWei = parseFloat(splitted[1]) * 1e18
+            console.log("Oyee",this.state.otherAccount);
             this.state.chatContract.methods.sendEther(this.state.otherAccount).send({
                 from: this.state.account,
-                value: asWei
+                value: asWei,
+
             })
             return true
         }
@@ -254,20 +264,48 @@ class Chat extends Component {
 
     async updateAddressSelect(newValue, isOtherAccount) {
         if (isOtherAccount) {
+            console.log(this.state.otherAccount);
             this.setState({
                 otherAccount: newValue,
-                chats: this.state.fixedChats
+                chats: this.state.chats
+            })
+            console.log("update addressteyim :",this.state.otherAccount);
+        }
+        else {
+            this.setState({
+                account: newValue,
+                chats: this.state.chats
+            })
+        }
+
+        console.log(newValue);
+        await this.loadBlockchainData()
+        await this.wait()
+        await this.fetchAllMsg()
+        await this.updateUIData()
+        
+    }
+
+     async updateSelect(newValue, isOtherAccount) {
+        if (isOtherAccount) {
+            this.setState({
+                otherAccount: newValue,
+                chats: this.state.chats
             })
         }
         else {
             this.setState({
                 account: newValue,
-                chats: this.state.fixedChats
+                chats: this.state.chats
             })
         }
+
+        console.log(newValue);
         await this.wait()
         await this.fetchAllMsg()
         await this.updateUIData()
+
+        return newValue;
     }
 
     async updateNbTransactions() {

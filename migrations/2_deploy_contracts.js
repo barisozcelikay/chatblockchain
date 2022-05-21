@@ -1,5 +1,5 @@
-const ChatApp = artifacts.require("ChatApp");
+import ChatApp from "ChatApp";
 
-module.exports = function(deployer) {
+export default function(deployer) {
   deployer.deploy(ChatApp);
 };
