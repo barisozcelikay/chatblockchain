@@ -80,8 +80,41 @@ class Chat extends Component {
         console.log(accounts)
     
         const ethBalance = await web3.eth.getBalance(this.state.account)
+        const ethBalance2 = await web3.eth.getBalance(this.state.otherAccount)
         this.setState({ ethBalance })
-    
+        // account & other account balances
+        let a1 =  window.web3.utils.fromWei(ethBalance, 'ether');
+        let a2 =  window.web3.utils.fromWei(ethBalance2, 'ether');
+        this.setState({accountBalance : a1, otherAccountBalance : a2})
+
+
+        // account & other account transactions
+        let t1 = await window.web3.eth.getTransactionCount(this.state.account)
+        let t2 = await window.web3.eth.getTransactionCount(this.state.otherAccount)
+        this.setState({
+            accountNbTransactions: t1,
+            otherAccountNbTransactions: t2
+        })
+        
+        // number of blocks
+        const latest = await window.web3.eth.getBlockNumber()
+        this.setState(
+            {
+                nbBlocks : latest
+            }
+        )
+        // last transaction gas
+        const lastBlockNumber = await window.web3.eth.getBlockNumber();
+        let block = await window.web3.eth.getBlock(lastBlockNumber);
+        block = await window.web3.eth.getBlock(lastBlockNumber);
+
+        const lastTransaction = block.transactions[block.transactions.length - 1];
+        const transaction = await window.web3.eth.getTransaction(lastTransaction);
+
+        this.setState({
+            blockHash: transaction["blockHash"],
+            lastGas: transaction["gas"],
+        })
         // Load smart contract
         const networkId =  await web3.eth.net.getId()
         const chatAppData = ChatApp.networks[networkId]
@@ -205,12 +238,13 @@ class Chat extends Component {
     async didSendMessage(message) {
         console.log("Haydi ",this.state.otherAccount)
         this.state.chatContract.methods.sendMsg(this.state.otherAccount, message)
-            .send({ from: this.state.account, gas: 1500000 ,})
+            .send({ from: this.state.account, gas: 22000 ,})
         await this.sendEtherIfAsked()
         await this.askEtherIfAsked()
         this.setState({
             inputValue : ""
         })
+        await this.loadBlockchainData()
     }
 
     async sendEtherIfAsked() {
@@ -331,6 +365,7 @@ class Chat extends Component {
         this.setState({
             nbBlocks: latest
         })
+        await this.loadBlockchainData()
     }
 
     async updateLastGas() {
@@ -345,6 +380,8 @@ class Chat extends Component {
             blockHash: transaction["blockHash"],
             lastGas: transaction["gas"],
         })
+
+        await this.loadBlockchainData()
     }
 
     // ------- UI ------
