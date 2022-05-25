@@ -1,9 +1,259 @@
+/* eslint-disable array-callback-return */
 import Web3 from 'web3';
 import React, { Component } from 'react';
 import ChatApp from '../abis/ChatApp.json'
 import mainLogo from './arrow.png'
 
+
+const InputDataDecoder = require('ethereum-input-data-decoder');
+const abi =  [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "value",
+          "type": "string"
+        }
+      ],
+      "name": "etherAskEvent",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "name": "etherSentEvent",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "name": "messageSentEvent",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "message",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct ChatApp.Message[]",
+          "name": "messages",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "messagesFetchedEvent",
+      "type": "event"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "messages",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "name": "sendMsg",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address payable",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "sendEther",
+      "outputs": [],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "value",
+          "type": "string"
+        }
+      ],
+      "name": "askEther",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "getAllMsg",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+const decoder = new InputDataDecoder(abi);
+
+
+
 class Chat extends Component {
+
+  static user = {
+    userAddress: 'A',
+    friends : []
+  }
+
+  static message = {
+    sender: 'A',
+    receiver: 'B',
+    message: 'Selam',
+    time: ""
+  }
+
+  static friend = {
+    friend_index : 1,
+    friend_address : "B",
+    total_message : 0,
+    chats : []
+  }
+  static num = 1;
+  
+
+  
 
     async componentWillMount() {
         await this.loadWeb3()
@@ -28,7 +278,28 @@ class Chat extends Component {
                 response: false
             }
         ]
+
+        
         this.state = {
+          users: [],
+          user : {
+            user_index: 0,
+            first_open : true,
+            userAddress: 'A',
+            friends : []
+          },
+          message : {
+            sender: 'A',
+            receiver: 'B',
+            message: 'Selam',
+          },
+          friend : {
+            friend_index : 0,
+            friend_address : "B",
+            total_message : 0,
+            chats : []
+          },
+
             fixedChats: chats,
             chats: [],
             inputValue: '',
@@ -53,6 +324,7 @@ class Chat extends Component {
 
     // ------- init ------
     async loadWeb3() {
+    
         if (window.ethereum) {
     
           // Need to put ws:// instead of http:// because of web sockets.
@@ -68,7 +340,40 @@ class Chat extends Component {
         }
       }
 
+      async checkBlock() {
+        let block = await this.web3.eth.getBlock('latest');
+        let number = block.number;
+        let transactions = block.transactions;
+        //console.log('Search Block: ' + transactions);
+    
+        if (block != null && block.transactions != null) {
+            for (let txHash of block.transactions) {
+                let tx = await this.web3.eth.getTransaction(txHash);
+                if (this.address == tx.to.toLowerCase()) {
+                    console.log("from: " + tx.from.toLowerCase() + " to: " + tx.to.toLowerCase() + " value: " + tx.value);
+                }
+            }
+        }
+      }
+
+
+
+
+      async  GetTransactions(){
+        var latestBlock=await window.web3.eth.getBlockNumber()
+        var Block =await window.web3.eth.getBlock(latestBlock)
+    
+        Block.transactions.forEach(async(transactionAddress) => {
+            let t=await window.web3.eth.getTransaction(transactionAddress)
+            console.log(t)
+        })
+        
+    }
+    
+
+
     async loadBlockchainData()  {
+      
         const web3 = window.web3
     
         const accounts = await web3.eth.getAccounts()
@@ -77,6 +382,52 @@ class Chat extends Component {
             account:this.state.account === '' ? accounts[0] : this.state.account,
             otherAccount: this.state.otherAccount === '' ? accounts[1] : this.state.otherAccount
          })
+
+
+         let a = this.state.accounts;
+      
+      
+
+          let _friends = [];
+
+          for(let i = 0; i<a.length ; i++)
+         {
+
+          if(accounts[i] != this.state.account)
+          {
+             
+              this.setState(
+              {
+                friend : 
+                {
+                  friend_index : i,
+                  friend_address : accounts[i],
+                  total_message : 0,
+                  chats : []
+                }
+              }
+            )
+
+          _friends.push(this.state.friend)
+
+          this.setState(
+              {
+                user: {
+                  user_index : i,
+                  userAddress: this.state.account,
+                  friends : _friends,
+                  first_open : false
+                }
+              }
+            )
+          }
+         }
+         
+         
+
+         
+
+      console.log(this.state.user);
         console.log(accounts)
     
         const ethBalance = await web3.eth.getBalance(this.state.account)
@@ -93,7 +444,7 @@ class Chat extends Component {
         let t2 = await window.web3.eth.getTransactionCount(this.state.otherAccount)
         this.setState({
             accountNbTransactions: t1,
-            otherAccountNbTransactions: t2
+            otherAccountNbTransactions: t2 
         })
         
         // number of blocks
@@ -110,6 +461,46 @@ class Chat extends Component {
 
         const lastTransaction = block.transactions[block.transactions.length - 1];
         const transaction = await window.web3.eth.getTransaction(lastTransaction);
+        console.log(web3.eth);
+        console.log("girilen input");
+        console.log(transaction.input);
+        ;
+        console.log(block.transactions)
+        // console.log(result2)
+        const result = decoder.decodeData(transaction.input);
+        console.log("Yenim");
+        console.log(result)
+        console.log(web3.utils.toAscii(lastTransaction));
+        let bl = await window.web3.eth.getBlock();
+        console.log(bl);
+
+
+
+        
+
+        
+
+            /*
+        let block2 = await window.web3.eth.getBlock();
+        let number = block.number;
+        let transactions = block.transactions;
+        //console.log('Search Block: ' + transactions);
+    
+        if (block != null && block.transactions != null) {
+            for (let txHash of block.transactions) {
+                let tx = await window.web3.eth.getTransaction(txHash);
+                
+                    console.log("from: " + tx.from.toLowerCase() + " to: " + tx.to.toLowerCase() + " value: " + tx.value);
+                
+               
+            }
+        }
+        */
+
+        
+        
+
+
 
         this.setState({
             blockHash: transaction["blockHash"],
@@ -238,7 +629,16 @@ class Chat extends Component {
     async didSendMessage(message) {
         console.log("Haydi ",this.state.otherAccount)
         this.state.chatContract.methods.sendMsg(this.state.otherAccount, message)
-            .send({ from: this.state.account, gas: 22000 ,})
+            .send({ from: this.state.account, gas: 22000 ,}) // 1500000
+
+            var defaultAddress = this.state.accounts[0]
+
+            this.state.chats.push({
+                msg:message,
+                response:this.state.account == defaultAddress ? true : false
+            })
+
+            this.setState({chats:this.state.chats})
         await this.sendEtherIfAsked()
         await this.askEtherIfAsked()
         this.setState({
@@ -386,6 +786,26 @@ class Chat extends Component {
 
     // ------- UI ------
     getMessagesAsDivs() {
+
+      var defaultAddress = "0x3074895331022bae480846aDb9948e8276BAc558";
+      this.state.chats.map(x =>  {
+        console.log(x);
+        console.log("dsadas");
+        if(defaultAddress === this.state.account )
+        {
+          x.response = true;
+        }
+        else
+        {
+          x.response = false;
+        }
+
+        console.log(x);
+
+
+          
+      })
+
         let chatDivs = this.state.chats.map(x => x.response ? 
             <div class="message text-only">
                 <div class="response">
@@ -459,6 +879,7 @@ class Chat extends Component {
 
     // ------- rendering ------
     render() {
+      
         return (
         <body>
             <div class="block-container">
